@@ -82,10 +82,11 @@ source "vmware-iso" "rocky9" {
   
   // Boot configuration
   boot_command = [
-    "<up><wait><tab>",
-    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
-    "<enter>"
-  ]
+  "<up><wait>",
+  "<tab><wait>",
+  " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
+  "<enter>"
+]
   boot_wait    = "10s"
 
 
