@@ -24,4 +24,3 @@ echo "Deleting temporary files..."
 rm -fr /tmp/*
 
 echo "Clearing the history..."
-history -c

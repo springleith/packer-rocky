@@ -10,29 +10,32 @@ $keyFile = "packer_build_key"
 if (Test-Path "$keyFile") { Remove-Item "$keyFile" -Force }
 if (Test-Path "$keyFile.pub") { Remove-Item "$keyFile.pub" -Force }
 
-# 2. Tạo cặp key mới (không passphrase)
-Write-Host "Generating SSH key..." -ForegroundColor Cyan
+# # 2. Tạo cặp key mới (không passphrase)
+# Write-Host "Generating SSH key..." -ForegroundColor Cyan
 
-# Dùng cmd.exe để xử lý "" đúng cách — PowerShell hay làm hỏng empty argument
-$cmdLine = 'ssh-keygen -t ed25519 -f "{0}" -N "" -C "packer-build-temp"' -f $keyFile
-cmd.exe /c $cmdLine
+# # Dùng cmd.exe để xử lý "" đúng cách — PowerShell hay làm hỏng empty argument
+# $cmdLine = 'ssh-keygen -t ed25519 -f "{0}" -N "" -C "packer-build-temp"' -f $keyFile
+# cmd.exe /c $cmdLine
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ssh-keygen failed with exit code $LASTEXITCODE" -ForegroundColor Red
-    exit 1
-}
+# if ($LASTEXITCODE -ne 0) {
+#     Write-Host "ssh-keygen failed with exit code $LASTEXITCODE" -ForegroundColor Red
+#     exit 1
+# }
 
-if (-not (Test-Path "$keyFile.pub")) {
-    Write-Host "Public key file was not generated: $keyFile.pub" -ForegroundColor Red
-    exit 1
-}
+# if (-not (Test-Path "$keyFile.pub")) {
+#     Write-Host "Public key file was not generated: $keyFile.pub" -ForegroundColor Red
+#     exit 1
+# }
 
-# 3. Đọc public key và mã hóa base64
-$pubKey = (Get-Content "$keyFile.pub" -Raw).Trim()
-$pubKeyB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pubKey))
-$env:PACKER_SSH_PUBLIC_KEY = $pubKeyB64
+# # 3. Đọc public key và mã hóa base64
+# # After generating the key
+# $pubKey = (Get-Content "$keyFile.pub" -Raw).Trim()
 
-Write-Host "Public key (base64): $pubKeyB64" -ForegroundColor Green
+# # Write it to the HTTP directory Packer serves to the installer
+# if (-not (Test-Path "http")) { New-Item -ItemType Directory -Path "http" | Out-Null }
+# Set-Content -Path "http\packer_key.pub" -Value $pubKey -NoNewline -Encoding ascii
+
+# Write-Host "Wrote public key to http\packer_key.pub" -ForegroundColor Green
 
 # Xóa template cũ
 if (Test-Path "template") {

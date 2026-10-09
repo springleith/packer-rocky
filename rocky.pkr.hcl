@@ -37,6 +37,7 @@ variable "vm_name" {
 # ssh use a temporary key to log in instead using username and password
 variable "ssh_public_key" {
   type    = string
+  description = "Public key matching packer_build_key"
   default = env("PACKER_SSH_PUBLIC_KEY")
 }
 
@@ -71,12 +72,16 @@ source "vmware-iso" "rocky9" {
 
   // Http directory configuration
   http_directory = "http"
+  // http_content = {
+  //"/ks.cfg"         = file("${path.root}/http/ks.cfg")
+   // "/packer_key.pub" = var.ssh_public_key
+  //}
   
   // Boot configuration
   boot_command = [
     "<up><wait>",
     "<tab><wait>",
-    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg inst.ssh_public_key=${var.ssh_public_key}",
+    " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
     "<enter>"
   ]
   boot_wait    = "10s"
@@ -88,7 +93,8 @@ source "vmware-iso" "rocky9" {
   // after provision has been done, packer automatically removes the public key from authorized_keys
   communicator = "ssh"
   ssh_username = "packer"
-  ssh_private_key_file      = "packer_build_key" 
+  ssh_password = "packer"
+  //ssh_private_key_file      = "packer_build_key" 
   ssh_timeout  = "30m"
   ssh_handshake_attempts    = 20
   ssh_clear_authorized_keys = true
