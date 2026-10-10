@@ -34,11 +34,16 @@ variable "vm_name" {
   default     = "rocky-base"
 }
 
-# ssh use a temporary key to log in instead using username and password
-variable "ssh_public_key" {
-  type    = string
-  description = "Public key matching packer_build_key"
-  default = env("PACKER_SSH_PUBLIC_KEY")
+variable "username" {
+  type        = string
+  description = "The username to connect to SSH"
+  default     = "root"
+}
+
+variable "password" {
+  type        = string
+  description = "A plaintext password to authenticate with SSH"
+  default     = "123456"
 }
 
 source "vmware-iso" "rocky9" {
@@ -53,10 +58,12 @@ source "vmware-iso" "rocky9" {
   firmware             = "bios"
   version              = 20
   guest_os_type = "rockylinux-64"
+  
   cpus         = 2
   // vmx_data = {"numvcpus" = "2"}
   memory       = 2048
   disk_size    = 20480
+  
   disk_adapter_type    = "scsi"
   disk_type_id = "0"
   network              = "nat"
@@ -72,11 +79,8 @@ source "vmware-iso" "rocky9" {
 
   // Http directory configuration
   http_directory = "http"
-  // http_content = {
-  //"/ks.cfg"         = file("${path.root}/http/ks.cfg")
-   // "/packer_key.pub" = var.ssh_public_key
-  //}
   
+
   // Boot configuration
   boot_command = [
     "<up><wait>",
@@ -88,21 +92,16 @@ source "vmware-iso" "rocky9" {
 
 
   // Communicator configuration
-  // packer will generate temporary SSH key after each time building
-  // this key is injected into VM through ks.cfg (watch http/ks.cfg)
-  // after provision has been done, packer automatically removes the public key from authorized_keys
   communicator = "ssh"
-  ssh_username = "packer"
-  ssh_password = "packer"
-  //ssh_private_key_file      = "packer_build_key" 
+  ssh_username = var.username
+  ssh_password = var.password
   ssh_timeout  = "30m"
-  ssh_handshake_attempts    = 20
-  ssh_clear_authorized_keys = true
 
   // Output configuration
   output_directory = "template"
 
   // Export configuration
+  format          = "vmx"
   skip_compaction = false
 
 }
@@ -110,15 +109,8 @@ source "vmware-iso" "rocky9" {
 build {
   sources = ["source.vmware-iso.rocky9"]
 
-  # step 1: Basic provisioning (update, install tools)
   provisioner "shell" {
     scripts = ["scripts/provisioning.sh"]
-    execute_command = "echo 'packer' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'"
-  }
-
-  # step 2: Finalize template (wipe identity, delete user packer, lock root)
-  provisioner "shell" {
-    scripts = ["scripts/setup-cloud-init.sh"]
     execute_command = "echo 'packer' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'"
   }
 }

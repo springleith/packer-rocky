@@ -1,12 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -e
-
-# Running before setup-cloud-init.sh
 
 # Description : Creating a virtual machine template under Rocky Linux 9 from ISO file with Packer using VMware Workstation
 # Author : Yoann LAMY <https://github.com/ynlamy/packer-rockylinux9>
 # Licence : GPLv3
+
+set -Eeuo pipefail
 
 echo "Updating the system..."
 dnf -y -q update &> /dev/null
@@ -24,3 +23,4 @@ echo "Deleting temporary files..."
 rm -fr /tmp/*
 
 echo "Clearing the history..."
+history -c

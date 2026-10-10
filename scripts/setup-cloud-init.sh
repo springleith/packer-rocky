@@ -27,31 +27,31 @@ echo "manual_cache_clean: True" > /etc/cloud/cloud.cfg.d/99-manual.cache.cfg
 
 
 # Config default user for clone step (cloud-init will create when booting with seed ISO)
-cat > /etc/cloud/cloud.cfg.d/99-default-user.cfg <<'EOF'
-system_info:
-  default_user:
-    name: rocky
-    lock_passwd: true
-    gecos: Rocky User
-    groups: [wheel]
-    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
-    shell: /bin/bash
-EOF
+# cat > /etc/cloud/cloud.cfg.d/99-default-user.cfg <<'EOF'
+# system_info:
+#   default_user:
+#     name: packer
+#     lock_passwd: true
+#     gecos: Rocky User
+#     groups: [wheel]
+#     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+#     shell: /bin/bash
+# EOF
 
 
 
 ##### SSH HARDENING: turn off password auth, only use key
 
-cat > /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'
-PasswordAuthentication no
-PermitRootLogin no
-PubkeyAuthentication yes
-ChallengeResponseAuthentication no
-KbdInteractiveAuthentication no
-EOF
+# cat > /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'
+# PasswordAuthentication no
+# PermitRootLogin no
+# PubkeyAuthentication yes
+# ChallengeResponseAuthentication no
+# KbdInteractiveAuthentication no
+# EOF
 
 # Ensure crypto policy do not override (use DEFAULT instead of LEGACY)
-update-crypto-policies --set DEFAULT
+# update-crypto-policies --set DEFAULT
 
 
 ##### DELETE USER packer
