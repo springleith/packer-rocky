@@ -34,17 +34,25 @@ variable "vm_name" {
   default     = "rocky-base"
 }
 
-variable "username" {
-  type        = string
-  description = "The username to connect to SSH"
-  default     = "root"
+# 1. Define the sensitive variable pointing to your environment variable
+variable "password_hash" {
+  type      = string
+  sensitive = true
+  default   = env("PACKER_HASHED_PASSWORD")
 }
 
-variable "password" {
-  type        = string
-  description = "A plaintext password to authenticate with SSH"
-  default     = "123456"
+variable "plaintext_password" {
+  type      = string
+  sensitive = true
+  default   = env("PACKER_PLAINTEXT_PASSWORD")
 }
+
+variable "root_password_hash" {
+  type      = string
+  sensitive = true
+  default   = env("ROOT_HASHED_PASSWORD")
+}
+
 
 source "vmware-iso" "rocky9" {
   
@@ -77,8 +85,13 @@ source "vmware-iso" "rocky9" {
   // Shutdown configuration
   shutdown_command = "systemctl poweroff"
 
-  // Http directory configuration
-  http_directory = "http"
+  # Packer evaluates this template in memory and serves it directly over HTTP
+  http_content = {
+    "/ks.cfg" = templatefile("${path.root}/http/ks.cfg", {
+      password_hash = var.password_hash
+      root_password_hash = var.root_password_hash
+    })
+  }
   
 
   // Boot configuration
@@ -93,8 +106,8 @@ source "vmware-iso" "rocky9" {
 
   // Communicator configuration
   communicator = "ssh"
-  ssh_username = var.username
-  ssh_password = var.password
+  ssh_username = "packer"
+  ssh_password = var.plaintext_password
   ssh_timeout  = "30m"
 
   // Output configuration
@@ -109,7 +122,7 @@ source "vmware-iso" "rocky9" {
 build {
   sources = ["source.vmware-iso.rocky9"]
 
-  provisioner "shell" {
+   provisioner "shell" {
     scripts = ["scripts/provisioning.sh"]
     execute_command = "echo 'packer' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'"
   }
