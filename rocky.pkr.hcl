@@ -11,15 +11,15 @@ packer {
 }
 
 variable "iso_url" {
-  type    = string
+  type        = string
   description = "A URL to the ISO file"
-  default = "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-minimal.iso"
+  default     = "https://download.rockylinux.org/pub/rocky/9/isos/x86_64/Rocky-9-latest-x86_64-minimal.iso"
 }
 
 variable "iso_checksum" {
-  type    = string
+  type        = string
   description = "The checksum for the ISO file"
-  default = "SHA256:d338032cd1cdd41c67139f2f71b4c832c8e4a21943106519db9c7137df7a63d4" # Replace with actual checksum for production
+  default     = "SHA256:d338032cd1cdd41c67139f2f71b4c832c8e4a21943106519db9c7137df7a63d4" # Replace with actual checksum for production
 }
 
 variable "headless" {
@@ -34,17 +34,16 @@ variable "vm_name" {
   default     = "rocky-base"
 }
 
-# 1. Define the sensitive variable pointing to your environment variable
-variable "password_hash" {
+variable "ssh_private_key_file" {
   type      = string
   sensitive = true
-  default   = env("PACKER_HASHED_PASSWORD")
+  default   = env("PACKER_PRIVATE_KEY_PATH")
 }
 
-variable "plaintext_password" {
+variable "ssh_public_key_file" {
   type      = string
   sensitive = true
-  default   = env("PACKER_PLAINTEXT_PASSWORD")
+  default   = env("PACKER_PUBLIC_KEY_PATH")
 }
 
 variable "root_password_hash" {
@@ -53,27 +52,26 @@ variable "root_password_hash" {
   default   = env("ROOT_HASHED_PASSWORD")
 }
 
-
 source "vmware-iso" "rocky9" {
-  
+
   // ISO configuration
   iso_url      = var.iso_url
   iso_checksum = var.iso_checksum
-  
+
   // hardware configuration
-  vm_name      = var.vm_name
-  vmdk_name = var.vm_name
-  firmware             = "bios"
-  version              = 20
+  vm_name       = var.vm_name
+  vmdk_name     = var.vm_name
+  firmware      = "bios"
+  version       = 20
   guest_os_type = "rockylinux-64"
-  
-  cpus         = 2
+
+  cpus = 2
   // vmx_data = {"numvcpus" = "2"}
-  memory       = 2048
-  disk_size    = 20480
-  
+  memory    = 2048
+  disk_size = 20480
+
   disk_adapter_type    = "scsi"
-  disk_type_id = "0"
+  disk_type_id         = "0"
   network              = "nat"
   network_adapter_type = "e1000"
   sound                = false
@@ -83,16 +81,17 @@ source "vmware-iso" "rocky9" {
   headless = var.headless
 
   // Shutdown configuration
-  shutdown_command = "systemctl poweroff"
+  shutdown_command = "sudo -n /usr/bin/systemctl poweroff"
+  shutdown_timeout = "5m"
 
   # Packer evaluates this template in memory and serves it directly over HTTP
   http_content = {
     "/ks.cfg" = templatefile("${path.root}/http/ks.cfg", {
-      password_hash = var.password_hash
+      ssh_pub_key        = trimspace(file(var.ssh_public_key_file)),
       root_password_hash = var.root_password_hash
     })
   }
-  
+
 
   // Boot configuration
   boot_command = [
@@ -101,14 +100,14 @@ source "vmware-iso" "rocky9" {
     " inst.ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg",
     "<enter>"
   ]
-  boot_wait    = "10s"
+  boot_wait = "10s"
 
 
   // Communicator configuration
-  communicator = "ssh"
-  ssh_username = "packer"
-  ssh_password = var.plaintext_password
-  ssh_timeout  = "30m"
+  communicator         = "ssh"
+  ssh_username         = "packer"
+  ssh_private_key_file = var.ssh_private_key_file
+  ssh_timeout          = "30m"
 
   // Output configuration
   output_directory = "template"
@@ -122,8 +121,8 @@ source "vmware-iso" "rocky9" {
 build {
   sources = ["source.vmware-iso.rocky9"]
 
-   provisioner "shell" {
-    scripts = ["scripts/provisioning.sh"]
+  provisioner "shell" {
+    scripts         = ["scripts/provisioning.sh"]
     execute_command = "echo 'packer' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'"
   }
 }

@@ -3,3 +3,7 @@ template/
 http/packer_key.pub
 scripts/firstboot-generalize.sh
 scripts/setup-cloud-init.sh
+
+.secrets/
+packer_build_key
+packer_build_key.pub
