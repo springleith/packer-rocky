@@ -4,52 +4,66 @@ Write-Host "=== Cleaning up previous build artifacts ===" -ForegroundColor Cyan
 
 $ErrorActionPreference = "Stop"
 
-$keyFile = "packer_build_key"
+Write-Host "=== Start SSH key generation ===" -ForegroundColor Cyan
 
-# 1. Xóa key cũ để tạo key mới mỗi lần build
-if (Test-Path "$keyFile") { Remove-Item "$keyFile" -Force }
-if (Test-Path "$keyFile.pub") { Remove-Item "$keyFile.pub" -Force }
+# 1. Resolve paths relative to this script
+$projectRoot = $PSScriptRoot
+$secretsDir  = Join-Path $projectRoot ".secrets"
+$keyFile     = Join-Path $secretsDir "packer_build_key"
+$publicKeyFile = "$keyFile.pub"
 
-# # 2. Tạo cặp key mới (không passphrase)
-# Write-Host "Generating SSH key..." -ForegroundColor Cyan
+Write-Host "Project root: $projectRoot"
+Write-Host "Secrets directory: $secretsDir"
 
-# # Dùng cmd.exe để xử lý "" đúng cách — PowerShell hay làm hỏng empty argument
-# $cmdLine = 'ssh-keygen -t ed25519 -f "{0}" -N "" -C "packer-build-temp"' -f $keyFile
-# cmd.exe /c $cmdLine
+# 2. Ensure the secrets directory exists
+New-Item -ItemType Directory -Path $secretsDir -Force |
+    Out-Null
 
-# if ($LASTEXITCODE -ne 0) {
-#     Write-Host "ssh-keygen failed with exit code $LASTEXITCODE" -ForegroundColor Red
-#     exit 1
-# }
+# 3. Remove the previous key pair
+Remove-Item -Path $keyFile, $publicKeyFile `
+    -Force -ErrorAction SilentlyContinue
 
-# if (-not (Test-Path "$keyFile.pub")) {
-#     Write-Host "Public key file was not generated: $keyFile.pub" -ForegroundColor Red
-#     exit 1
-# }
+# 4. Generate a temporary Ed25519 key pair without a passphrase
+& ssh-keygen -q -t ed25519 `
+    -f $keyFile `
+    -N '""' `
+    -C "packer-build-temp"
 
-# # 3. Đọc public key và mã hóa base64
-# # After generating the key
-# $pubKey = (Get-Content "$keyFile.pub" -Raw).Trim()
+if ($LASTEXITCODE -ne 0) {
+    throw "SSH key generation failed."
+}
 
-# # Write it to the HTTP directory Packer serves to the installer
-# if (-not (Test-Path "http")) { New-Item -ItemType Directory -Path "http" | Out-Null }
-# Set-Content -Path "http\packer_key.pub" -Value $pubKey -NoNewline -Encoding ascii
+# 5. Verify the generated files
+if (-not (Test-Path $keyFile) -or
+    -not (Test-Path $publicKeyFile)) {
+    throw "SSH key pair was not generated correctly."
+}
 
-# Write-Host "Wrote public key to http\packer_key.pub" -ForegroundColor Green
+# 6. set the environment variable
+$env:PACKER_PRIVATE_KEY_PATH = (Resolve-Path ".\.secrets\packer_build_key").Path
+$env:PACKER_PUBLIC_KEY_PATH  = (Resolve-Path ".\.secrets\packer_build_key.pub").Path
 
-# Xóa template cũ
+$env:ROOT_HASHED_PASSWORD = (openssl passwd -6 -salt somesalt123 packer).Trim()
+
+
+Write-Host "=== SSH key generation completed ===" -ForegroundColor Green
+Write-Host "Private key: $keyFile"
+Write-Host "Public key:  $publicKeyFile"
+
+
+# Delete old template
 if (Test-Path "template") {
     Remove-Item "template" -Recurse -Force
     Write-Host "Removed old template directory" -ForegroundColor Yellow
 }
 
-# Xóa packer cache (nếu muốn build lại từ đầu)
+# Delete packer cache (nếu muốn build lại từ đầu)
 if (Test-Path "packer_cache") {
     Remove-Item "packer_cache" -Recurse -Force
     Write-Host "Removed packer cache" -ForegroundColor Yellow
 }
 
-# Xóa known_hosts entry cũ (tránh warning khi IP trùng)
+# Remove known_hosts entry cũ (tránh warning khi IP trùng)
 $knownHosts = "$env:USERPROFILE\.ssh\known_hosts"
 if (Test-Path $knownHosts) {
     # Xóa dòng chứa IP VMware NAT (192.168.40.x)
@@ -58,6 +72,7 @@ if (Test-Path $knownHosts) {
 }
 
 Write-Host "`n=== Starting Packer build ===" -ForegroundColor Cyan
+packer validate rocky.pkr.hcl
 packer init rocky.pkr.hcl
 packer build rocky.pkr.hcl
 

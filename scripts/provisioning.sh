@@ -28,6 +28,9 @@ sshd -T | grep -E '^(passwordauthentication|pubkeyauthentication|permitrootlogin
 
 systemctl reload sshd
 
+echo "Print IP Address:..."
+ip -a
+
 echo "Deleting the files ks.cfg..."
 rm -f /root/anaconda-ks.cfg /root/original-ks.cfg
 
