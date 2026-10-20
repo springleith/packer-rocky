@@ -1,5 +1,7 @@
 packer_cache/
 template/
+rocky-clone1/
+rocky-clone2/
 http/packer_key.pub
 scripts/firstboot-generalize.sh
 scripts/setup-cloud-init.sh
