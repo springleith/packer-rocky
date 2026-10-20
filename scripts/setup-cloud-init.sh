@@ -1,102 +1,71 @@
-#!/bin/bash -eux
+
+#!/bin/bash
+set -euxo pipefail
 
 echo "=== Finalizing template for cloud-init ==="
 
-if [ ! -f /etc/cloud/cloud.cfg ]; then
-    echo "cloud-init not installed, aborting"
+if ! rpm -q cloud-init >/dev/null 2>&1; then
+    echo "cloud-init is not installed; aborting"
     exit 1
 fi
 
-##### DATASOURCE SECTION
-
-# NoCloud for Workstation (VMware datasource only runs on vSphere)
+# 1. VMware Workstation clones will use a NoCloud seed ISO.
 cat > /etc/cloud/cloud.cfg.d/99-datasource.cfg <<'EOF'
 datasource_list: [ NoCloud, None ]
 EOF
 
-# Configure cloud-init for VMware guestinfo datasource
-# do not allow cloud-init to override
-cat > /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg <<'EOF'
-network: {config: disabled}
-EOF
+# 2. Allow normal guest networking, including DHCP.
+# Remove any old setting that disables cloud-init network configuration.
+rm -f /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
 
+# Remove the previous custom cache setting if it exists.
+rm -f /etc/cloud/cloud.cfg.d/99-manual.cache.cfg
 
-# Prevent network config from reverting on subsequent boots
-# Prevent cloud-init from reverting network config after first boot
-echo "manual_cache_clean: True" > /etc/cloud/cloud.cfg.d/99-manual.cache.cfg
-
-
-# Config default user for clone step (cloud-init will create when booting with seed ISO)
-# cat > /etc/cloud/cloud.cfg.d/99-default-user.cfg <<'EOF'
-# system_info:
-#   default_user:
-#     name: packer
-#     lock_passwd: true
-#     gecos: Rocky User
-#     groups: [wheel]
-#     sudo: ["ALL=(ALL) NOPASSWD:ALL"]
-#     shell: /bin/bash
-# EOF
-
-
-
-##### SSH HARDENING: turn off password auth, only use key
-
-# cat > /etc/ssh/sshd_config.d/99-hardening.conf <<'EOF'
-# PasswordAuthentication no
-# PermitRootLogin no
-# PubkeyAuthentication yes
-# ChallengeResponseAuthentication no
-# KbdInteractiveAuthentication no
-# EOF
-
-# Ensure crypto policy do not override (use DEFAULT instead of LEGACY)
-# update-crypto-policies --set DEFAULT
-
-
-##### DELETE USER packer
-
-# remove sudoers file from packer
-rm -f /etc/sudoers.d/packer
-# remove SSH key build from packer
-rm -rf /home/packer/.ssh
-# remove user packer completely
-userdel -r packer 2>/dev/null || true
-
-
-
-##### LOCK ROOT - do not allow root to log in with password
-passwd -l root
-
-
-##### RESET cloud-init state (before identity wiping out)
-# Clear cloud-init state so it runs fresh on first clone boot
+# 3. Reset cloud-init state so each clone initializes from its own seed.
 cloud-init clean --logs
 
-
-##### WIPE IDENTITY - New one will be created every time cloning
-
-# Wipe machine-id (regenerated on boot)
-# Truncate machine-id for clone uniqueness
+# 4. Remove machine identity; the clone regenerates it on boot.
 truncate -s 0 /etc/machine-id
 
-# Remove SSH host keys
-# Clean SSH host keys so clones get unique ones
+# 5. Remove SSH host keys so every clone generates its own keys.
 rm -f /etc/ssh/ssh_host_*
-rm -f /etc/ssh/ssh_host_*_key.pub
 
-# Reset hostname
+# 6. Reset hostname to a neutral template value.
 echo "localhost" > /etc/hostname
 hostnamectl set-hostname localhost 2>/dev/null || true
 
 
-##### FINAL CLEANING
+# 7. Remove Packer account and its build-time SSH credentials.
+# rm -f /etc/sudoers.d/packer
+# rm -rf /home/packer/.ssh
+# userdel -r packer 2>/dev/null || true
 
-# Clear temporary files and history
+# Lock root password login.
+passwd -l root || true
+
+# 8. Final cleanup.
 rm -rf /tmp/* /var/tmp/*
 rm -f /root/.bash_history /home/*/.bash_history
-export HISTSIZE=0
-# delete old log (optional for lightweight template)
-find /var/log -type f -name "*.log" -exec truncate -s 0 {} \; 2>/dev/null || true
+find /var/log -type f -name "*.log" \
+    -exec truncate -s 0 {} \; 2>/dev/null || true
+
+echo "=== Template cleanup complete ==="
+
+
+echo "=== Verifying template cleanup ==="
+
+rpm -q cloud-init
+cat /etc/cloud/cloud.cfg.d/99-datasource.cfg
+cat /etc/hostname
+cat /etc/machine-id
+
+# SSH host keys should not exist in the template.
+if compgen -G "/etc/ssh/ssh_host_*" > /dev/null; then
+    echo "ERROR: SSH host keys still exist"
+    ls -l /etc/ssh/ssh_host_*
+    exit 1
+else
+    echo "OK: SSH host keys have been removed"
+fi
 
 echo "=== Template cleanup complete ==="

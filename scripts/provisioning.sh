@@ -11,7 +11,7 @@ echo "Updating the system..."
 dnf -y -q update &> /dev/null
 
 echo "Installing packages..."
-dnf -y -q install open-vm-tools mlocate net-tools unzip wget &> /dev/null
+dnf -y -q install open-vm-tools mlocate net-tools unzip wget cloud-init &> /dev/null
 
 cat > /etc/ssh/sshd_config.d/00-packer-hardening.conf <<'EOF'
 PasswordAuthentication no
@@ -29,7 +29,7 @@ sshd -T | grep -E '^(passwordauthentication|pubkeyauthentication|permitrootlogin
 systemctl reload sshd
 
 echo "Print IP Address:..."
-ip -a
+ip a
 
 echo "Deleting the files ks.cfg..."
 rm -f /root/anaconda-ks.cfg /root/original-ks.cfg

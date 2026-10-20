@@ -122,7 +122,8 @@ build {
   sources = ["source.vmware-iso.rocky9"]
 
   provisioner "shell" {
-    scripts         = ["scripts/provisioning.sh"]
+    scripts         = ["scripts/provisioning.sh", "scripts/setup-cloud-init.sh"]
     execute_command = "echo 'packer' | {{ .Vars }} sudo -S -E bash '{{ .Path }}'"
   }
+
 }

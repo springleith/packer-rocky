@@ -83,3 +83,31 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "`n=== Build failed ===" -ForegroundColor Red
     exit $LASTEXITCODE
 }
+
+
+# # --- ĐOẠN BỔ SUNG GỌI ANSIBLE TRONG WSL SAU KHI PACKER BUILD XONG ---
+
+# if ($LASTEXITCODE -eq 0) {
+#     Write-Host "`n=== Packer build successful! Starting Ansible via WSL ===" -ForegroundColor Cyan
+
+#     # 1. Lấy IP của máy ảo vừa tạo trên VMware (hoặc gán IP tĩnh/DHCP từ môi trường lab)
+#     # (Giả định bạn lấy IP động hoặc cấu hình sẵn trong inventory của WSL)
+    
+#     Write-Host "Triggering Ansible playbook inside WSL..." -ForegroundColor Yellow
+
+#     # 2. Gọi lệnh wsl chạy ansible-playbook
+#     # Lưu ý: Đường dẫn thư mục trong WSL (ví dụ /mnt/c/path/to/project/ansible)
+#     wsl bash -c "ansible-playbook -i /mnt/c/path/to/your/project/ansible/inventory /mnt/c/path/to/your/project/ansible/site.yml"
+
+#     if ($LASTEXITCODE -eq 0) {
+#         Write-Host "`n=== Ansible configuration completed successfully! ===" -ForegroundColor Green
+#         Write-Host "Template and Server setup ready for EV Charging Project!" -ForegroundColor Green
+#     } else {
+#         Write-Host "`n=== Ansible configuration failed ===" -ForegroundColor Red
+#         exit $LASTEXITCODE
+#     }
+
+# } else {
+#     Write-Host "`n=== Packer Build failed ===" -ForegroundColor Red
+#     exit $LASTEXITCODE
+# }
