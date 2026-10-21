@@ -1,0 +1,22 @@
+---
+- name: Install Apache packages
+  ansible.builtin.import_tasks: install_apache.yml
+
+- name: Configure Apache service
+  ansible.builtin.import_tasks: start_service.yml
+
+- name: Verify Apache listening port
+  ansible.builtin.import_tasks: verify_port.yml
+
+- name: Verify Apache webpage
+  ansible.builtin.import_tasks: verify_http.yml
+
+- name: Record Apache package versions
+  ansible.builtin.import_tasks: record_packages.yml
+
+- name: Verify enabled Firewall
+  ansible.builtin.import_tasks: verify_firewall.yml
+
+- name: Verify remote access from clients
+  ansible.builtin.import_tasks: verify_remote_access.yml
+

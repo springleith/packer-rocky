@@ -1,0 +1,6 @@
+---
+- name: Remove sudo privileges for packer
+  ansible.builtin.file:
+    path: /etc/sudoers.d/packer
+    state: absent
+

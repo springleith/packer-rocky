@@ -1,0 +1,7 @@
+---
+- name: Install Apache web server (httpd)
+  ansible.builtin.dnf:
+    name: httpd
+    state: present
+
+

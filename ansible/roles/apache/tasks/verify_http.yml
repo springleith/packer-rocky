@@ -1,0 +1,15 @@
+---
+- name: Verify the default Apache webpage
+  ansible.builtin.uri:
+    url: http://127.0.0.1/
+    method: GET
+    status_code: 200
+    return_content: true
+  register: apache_http_result
+
+- name: Display HTTP verification result
+  ansible.builtin.debug:
+    msg:
+      - "HTTP status: {{ apache_http_result.status }}"
+      - "Content received: {{ apache_http_result.content | length }} characters"
+

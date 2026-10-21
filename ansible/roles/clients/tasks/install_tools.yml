@@ -1,0 +1,5 @@
+---
+- name: Install curl on client
+  ansible.builtin.dnf:
+    name: curl
+    state: present

@@ -1,0 +1,16 @@
+---
+- name: Query installed Apache packages
+  ansible.builtin.command:
+    argv:
+      - rpm
+      - -qa
+      - --qf
+      - "%{NAME} %{VERSION}-%{RELEASE}.%{ARCH}\n"
+      - "httpd*"
+  register: apache_package_versions
+  changed_when: false
+
+- name: Display installed Apache packages
+  ansible.builtin.debug:
+    var: apache_package_versions.stdout_lines
+

@@ -1,0 +1,20 @@
+---
+- name: Start and enable httpd service
+  ansible.builtin.service:
+    name: httpd
+    state: started
+    enabled: yes
+
+- name: Check Apache service state
+  ansible.builtin.command:
+    argv:
+      - systemctl
+      - is-active
+      - httpd
+  register: apache_service_state
+  changed_when: false
+  failed_when: apache_service_state.stdout != "active"
+
+- name: Display Apache service state
+  ansible.builtin.debug:
+    msg: "Apache service is {{ apache_service_state.stdout }}"

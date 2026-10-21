@@ -1,0 +1,23 @@
+---
+- name: Configure lab user accounts
+  hosts: all_servers
+  become: true
+  roles:
+    - common
+
+
+- name: Setup Webserver and virtual hosts on Clone 1
+  hosts: webservers
+  become: true
+  roles:
+    - apache
+
+
+- name: Setup Client and run access simulation
+  hosts: clients
+  become: true
+  roles:
+    - clients
+
+
+

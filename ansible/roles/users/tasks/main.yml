@@ -1,0 +1,3 @@
+---
+- name: Restore sudo privileges of packer user
+  ansible.builtin.import_tasks: restore_packer_sudo.yml

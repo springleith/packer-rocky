@@ -1,0 +1,8 @@
+---
+- name: Wait for Apache to listen on port 80
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 80
+    state: started
+    timeout: 30
+

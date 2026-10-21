@@ -1,0 +1,6 @@
+---
+- name: Install client testing tools
+  ansible.builtin.import_tasks: install_tools.yml
+
+- name: Verify remote website
+  ansible.builtin.import_tasks: test_http.yml

@@ -1,0 +1,25 @@
+#roles/common/tasks/main.yml
+
+---
+# Tạo group sysadmin (nếu chưa có)
+- name: Ensure group sysadmin exists
+  ansible.builtin.group:
+    name: sysadmin
+    state: present
+
+# Tạo user sysadmin
+- name: Create sysadmin user
+  ansible.builtin.user:
+    name: sysadmin
+    group: sysadmin
+    shell: /bin/bash
+    create_home: yes
+    state: present
+
+# Phân quyền sudo không cần nhập password cho user sysadmin
+- name: Grant sudo access to sysadmin user
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/sysadmin
+    content: "sysadmin ALL=(ALL) NOPASSWD: ALL"
+    mode: '0440'
+    validate: 'visudo -cf %s'
